@@ -13,10 +13,6 @@ from sklearn.metrics import accuracy_score, mean_squared_error, r2_score, classi
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 import xgboost as xgb
 from lightgbm import LGBMClassifier, LGBMRegressor
-import requests
-from PIL import Image
-from io import BytesIO
-import base64
 import plotly.express as px
 import plotly.graph_objects as go
 import hashlib
@@ -43,58 +39,28 @@ USERS = {
     "admin": hash_password("admin_password")
 }
 
-# Function to load image from URL
-def load_image_from_url(url):
-    response = requests.get(url)
-    img = Image.open(BytesIO(response.content))
-    return img
-
-# Function to encode image to base64
-def img_to_base64(img):
-    buffered = BytesIO()
-    img.save(buffered, format="PNG")
-    return base64.b64encode(buffered.getvalue()).decode()
-
-# Function to add background image
-def add_bg_from_url(image_url):
-    img = load_image_from_url(image_url)
-    encoded_img = img_to_base64(img)
-    st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-image: url(data:image/png;base64,{encoded_img});
-        background-size: cover;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-    )
-
-# Add background image
-add_bg_from_url("https://www.scientific-computing.com/sites/default/files/styles/content_banner/public/content/news-story/lead-image/QuardiaShutterstock.png?h=9c610b38&itok=K4ik1nBn")
+def init_session_state():
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = "Data Upload"
+    if 'problem_type' not in st.session_state:
+        st.session_state.problem_type = "Classification"
 
 def login_page():
     st.markdown(
         """
         <style>
         .login-container {
-            background-color: rgba(30, 61, 89, 0.7);
+            background-color: #f0f2f6;
             padding: 30px;
             border-radius: 10px;
-            backdrop-filter: blur(5px);
-            color: white;
         }
         .login-title {
-            color: white;
+            color: #0e1117;
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 20px;
-        }
-        .stButton>button {
-            background-color: #FFA500;
-            color: #1E3D59;
-            font-weight: bold;
         }
         </style>
         """,
@@ -136,9 +102,9 @@ def data_upload():
                 st.warning("The dataset contains missing values. Consider handling them in the preprocessing step.")
             
             # Display data info
-            buffer = BytesIO()
+            buffer = StringIO()
             data.info(buf=buffer)
-            s = buffer.getvalue().decode()
+            s = buffer.getvalue()
             st.text(s)
             
             # Display summary statistics
@@ -233,9 +199,16 @@ def feature_engineering():
         st.warning("Please complete data preprocessing first.")
         return
     
+    if 'features' not in st.session_state:
+        st.warning("No features available. Please complete data preprocessing.")
+        return
+    
     # Feature selection
     st.subheader("Feature Selection")
     k = st.slider("Select number of top features", 1, len(st.session_state.features), len(st.session_state.features))
+    
+    if 'problem_type' not in st.session_state:
+        st.session_state.problem_type = "Classification"  # Default value
     
     if st.session_state.problem_type == "Classification":
         selector = SelectKBest(f_classif, k=k)
@@ -261,6 +234,9 @@ def model_selection():
     if 'X_train' not in st.session_state:
         st.warning("Please complete data preprocessing first.")
         return
+    
+    if 'problem_type' not in st.session_state:
+        st.session_state.problem_type = "Classification"  # Default value
     
     problem_type = st.radio("Select problem type", ["Classification", "Regression"])
     st.session_state.problem_type = problem_type
@@ -380,7 +356,7 @@ def model_evaluation():
         fig.update_xaxes(title="Predicted")
         fig.update_yaxes(title="Actual")
         st.plotly_chart(fig)
-        
+                
         # ROC curve (for binary classification)
         if len(np.unique(st.session_state.y_test)) == 2:
             from sklearn.metrics import roc_curve, auc
@@ -471,27 +447,32 @@ def model_explainability():
 def main_app():
     st.title("Advanced AutoML Application")
     
-    # Sidebar for navigation
-    page = st.sidebar.selectbox("Choose a page", ["Data Upload", "Data Preprocessing", "Feature Engineering", "Model Selection", "Training", "Evaluation", "Model Explainability"])
+    # Buttons at the top for navigation
+    cols = st.columns(7)
+    pages = ["Data Upload", "Data Preprocessing", "Feature Engineering", "Model Selection", "Training", "Evaluation", "Model Explainability"]
     
-    if page == "Data Upload":
+    for i, page in enumerate(pages):
+        if cols[i].button(page):
+            st.session_state.current_page = page
+    
+    # Display the current page
+    if st.session_state.current_page == "Data Upload":
         data_upload()
-    elif page == "Data Preprocessing":
+    elif st.session_state.current_page == "Data Preprocessing":
         data_preprocessing()
-    elif page == "Feature Engineering":
+    elif st.session_state.current_page == "Feature Engineering":
         feature_engineering()
-    elif page == "Model Selection":
+    elif st.session_state.current_page == "Model Selection":
         model_selection()
-    elif page == "Training":
+    elif st.session_state.current_page == "Training":
         model_training()
-    elif page == "Evaluation":
+    elif st.session_state.current_page == "Evaluation":
         model_evaluation()
-    elif page == "Model Explainability":
+    elif st.session_state.current_page == "Model Explainability":
         model_explainability()
 
 def main():
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
+    init_session_state()
     
     if not st.session_state.logged_in:
         login_page()
