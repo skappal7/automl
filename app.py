@@ -25,6 +25,7 @@ import joblib
 import shap
 import time
 from scipy.stats import randint, uniform
+import matplotlib.pyplot as plt
 
 # Set page config
 st.set_page_config(page_title="Advanced AutoML App", layout="wide")
@@ -116,39 +117,6 @@ def login_page():
                 st.error("Invalid username or password")
         
         st.markdown('</div>', unsafe_allow_html=True)
-
-def main_app():
-    st.title("Advanced AutoML Application")
-    
-    # Sidebar for navigation
-    page = st.sidebar.selectbox("Choose a page", ["Data Upload", "Data Preprocessing", "Feature Engineering", "Model Selection", "Training", "Evaluation", "Model Explainability"])
-    
-    if page == "Data Upload":
-        data_upload()
-    elif page == "Data Preprocessing":
-        data_preprocessing()
-    elif page == "Feature Engineering":
-        feature_engineering()
-    elif page == "Model Selection":
-        model_selection()
-    elif page == "Training":
-        model_training()
-    elif page == "Evaluation":
-        model_evaluation()
-    elif page == "Model Explainability":
-        model_explainability()
-
-def main():
-    if 'logged_in' not in st.session_state:
-        st.session_state.logged_in = False
-    
-    if not st.session_state.logged_in:
-        login_page()
-    else:
-        main_app()
-
-if __name__ == "__main__":
-    main()
 
 def data_upload():
     st.header("Data Upload")
@@ -259,7 +227,7 @@ def data_preprocessing():
         
         st.success("Data preprocessing completed!")
 
-  def feature_engineering():
+def feature_engineering():
     st.header("Feature Engineering")
     if 'X_train' not in st.session_state:
         st.warning("Please complete data preprocessing first.")
@@ -500,7 +468,28 @@ def model_explainability():
     except Exception as e:
         st.error(f"An error occurred while generating Partial Dependence Plots: {str(e)}")
 
-  def main():
+def main_app():
+    st.title("Advanced AutoML Application")
+    
+    # Sidebar for navigation
+    page = st.sidebar.selectbox("Choose a page", ["Data Upload", "Data Preprocessing", "Feature Engineering", "Model Selection", "Training", "Evaluation", "Model Explainability"])
+    
+    if page == "Data Upload":
+        data_upload()
+    elif page == "Data Preprocessing":
+        data_preprocessing()
+    elif page == "Feature Engineering":
+        feature_engineering()
+    elif page == "Model Selection":
+        model_selection()
+    elif page == "Training":
+        model_training()
+    elif page == "Evaluation":
+        model_evaluation()
+    elif page == "Model Explainability":
+        model_explainability()
+
+def main():
     if 'logged_in' not in st.session_state:
         st.session_state.logged_in = False
     
